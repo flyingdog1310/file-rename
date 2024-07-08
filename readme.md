@@ -5,7 +5,7 @@ This simple Python script helps you batch rename image files in a folder. It sor
 ## Features
 
 - Automatically detects and renames image files in the current folder
-- Supports .png, .jpg, .jpeg, .gif, .bmp .webp formats
+- Supports .png, .jpg, .jpeg, .gif, .bmp, .webp formats
 - Sorts files by original filename before renaming
 - Avoids filename conflicts by automatically handling duplicate filenames
 - Can be packaged as a standalone Windows executable (.exe)
