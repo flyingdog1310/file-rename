@@ -1,55 +1,64 @@
-name: Release
+name: Build and Release
+
 on:
   push:
     branches:
-      - main  
-
-permissions:
-  contents: write
-  issues: write
-  pull-requests: write
+      - main
 
 jobs:
-  release:
-    name: Release
+  build-and-release:
     runs-on: windows-latest
+    
+    env:
+      PYTHON_VERSION: '3.12'
+      
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: "lts/*"
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.x'
+    - name: Cache pip packages
+      uses: actions/cache@v3
+      with:
+        path: ~\AppData\Local\pip\Cache
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt pyinstaller
-          npm install semantic-release @semantic-release/git @semantic-release/github
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt pyinstaller
 
-      - name: Build with PyInstaller
-        run: pyinstaller --onefile rename_images.py
+    - name: Build with PyInstaller
+      run: pyinstaller --onefile --name rename_images rename_images.py
 
-      - name: Semantic Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx semantic-release
+    - name: Generate version number
+      id: version
+      run: |
+        echo "VERSION=v0.0.${{ github.run_number }}" >> $env:GITHUB_OUTPUT
 
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
-        if: ${{ env.NEW_RELEASE_PUBLISHED == 'true' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ env.NEW_RELEASE_UPLOAD_URL }}
-          asset_path: ./dist/rename_images.exe
-          asset_name: rename_images.exe
-          asset_content_type: application/octet-stream
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.version.outputs.VERSION }}
+        release_name: Release ${{ steps.version.outputs.VERSION }}
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./dist/rename_images.exe
+        asset_name: rename_images.exe
+        asset_content_type: application/octet-stream
