@@ -1,49 +1,55 @@
-name: Build and Release
-
+name: Release
 on:
   push:
     branches:
-      - main
+      - main  
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
 
 jobs:
-  build-and-release:
+  release:
+    name: Release
     runs-on: windows-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.x'
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "lts/*"
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt pyinstaller
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
 
-    - name: Build with PyInstaller
-      run: pyinstaller --onefile rename_images.py
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+          npm install semantic-release @semantic-release/git @semantic-release/github
 
-    - name: Semantic Release
-      uses: cycjimmy/semantic-release-action@v4
-      id: semantic
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        extra_plugins: |
-          @semantic-release/git
-          @semantic-release/changelog
+      - name: Build with PyInstaller
+        run: pyinstaller --onefile rename_images.py
 
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      if: steps.semantic.outputs.new_release_published == 'true'
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.semantic.outputs.new_release_upload_url }}
-        asset_path: ./dist/rename_images.exe
-        asset_name: rename_images.exe
-        asset_content_type: application/octet-stream
+      - name: Semantic Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        if: ${{ env.NEW_RELEASE_PUBLISHED == 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ env.NEW_RELEASE_UPLOAD_URL }}
+          asset_path: ./dist/rename_images.exe
+          asset_name: rename_images.exe
+          asset_content_type: application/octet-stream
