@@ -13,7 +13,7 @@ def get_unique_filename(base_name, ext):
 def rename_images():
     current_dir = os.getcwd()
     
-    image_extensions = (".png", ".jpg", ".jpeg", ".gif", ".bmp")
+    image_extensions = (".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp")
     raw_image_files = [
         f for f in os.listdir(current_dir) if f.lower().endswith(image_extensions)
     ]

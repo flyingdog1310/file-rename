@@ -62,3 +62,4 @@ jobs:
         asset_path: ./dist/rename_images.exe
         asset_name: rename_images.exe
         asset_content_type: application/octet-stream
+        retention-days: 1
